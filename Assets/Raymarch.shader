@@ -42,11 +42,10 @@ Shader "Unlit/Raymarch" {
             }
 
             float GetDist(float3 p) {
-                float d = length(p) - 0.5f;
+                float dstA = dot(sin(p * 5.0f), 1);
+                float dstB = dot(p % 4, 1);
 
-                d = length(float2(length(p.xz) - 0.5f, p.y)) - 0.1f;
-            
-                return d;
+                return lerp(dstA, dstB, 0.3f);
             }
 
             float Raymarch(float3 origin, float3 direction) {
@@ -89,9 +88,7 @@ Shader "Unlit/Raymarch" {
                     float3 p = origin + direction * d;
                     float3 n = GetNormal(p);
                     col.rgb = n;
-                } else {
-                    clip(-1.0f);
-                }
+                } else discard;
                 
                 return col;
             }
