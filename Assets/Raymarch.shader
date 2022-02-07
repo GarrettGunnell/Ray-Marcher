@@ -27,6 +27,7 @@ Shader "Unlit/Raymarch" {
             struct v2f {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
+                float3 worldPos : TEXCOORD1;
             };
 
             sampler2D _MainTex;
@@ -36,12 +37,14 @@ Shader "Unlit/Raymarch" {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex);
                 return o;
             }
 
             float GetDist(float3 p) {
                 float d = length(p) - 0.5f;
+
+                d = length(float2(length(p.xz) - 0.5f, p.y)) - 0.1f;
             
                 return d;
             }
@@ -62,17 +65,32 @@ Shader "Unlit/Raymarch" {
                 return distanceFromOrigin;
             }
 
+            float3 GetNormal(float3 p) {
+                float2 e = float2(0.001, 0);
+                float3 n = GetDist(p) - float3(
+                    GetDist(p - e.xyy), 
+                    GetDist(p - e.yxy), 
+                    GetDist(p - e.yyx)
+                    );
+
+                return normalize(n);
+            }
+
             fixed4 fp(v2f i) : SV_Target {
                 float2 uv = i.uv - 0.5f;
-                float3 origin = float3(0.0f, 0.0f, -3.0f);
-                float3 direction = normalize(float3(uv.x, uv.y, 1.0f));
+                float3 origin = _WorldSpaceCameraPos;
+                float3 direction = normalize(i.worldPos - origin);
 
                 float d = Raymarch(origin, direction);
 
                 fixed4 col = 0.0f;
                 
                 if (d < MAX_DIST) {
-                    col.r = 1.0f;
+                    float3 p = origin + direction * d;
+                    float3 n = GetNormal(p);
+                    col.rgb = n;
+                } else {
+                    clip(-1.0f);
                 }
                 
                 return col;
