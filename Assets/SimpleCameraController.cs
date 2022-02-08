@@ -79,11 +79,11 @@ namespace UnityTemplateProjects
         Vector3 GetInputTranslationDirection()
         {
             Vector3 direction = new Vector3();
-            if (Input.GetKey(KeyCode.W))
+            if (Input.GetKey(KeyCode.S))
             {
                 direction += Vector3.forward;
             }
-            if (Input.GetKey(KeyCode.S))
+            if (Input.GetKey(KeyCode.W))
             {
                 direction += Vector3.back;
             }
@@ -137,8 +137,8 @@ namespace UnityTemplateProjects
                 
                 var mouseSensitivityFactor = mouseSensitivityCurve.Evaluate(mouseMovement.magnitude);
 
-                m_TargetCameraState.yaw += mouseMovement.x * mouseSensitivityFactor;
-                m_TargetCameraState.pitch += mouseMovement.y * mouseSensitivityFactor;
+                m_TargetCameraState.yaw += -mouseMovement.x * mouseSensitivityFactor;
+                m_TargetCameraState.pitch += -mouseMovement.y * mouseSensitivityFactor;
             }
             
             // Translation
