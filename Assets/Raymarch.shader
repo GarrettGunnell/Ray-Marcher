@@ -14,9 +14,9 @@ Shader "Unlit/Raymarch" {
             #pragma fragment fp
 
             #include "UnityCG.cginc"
+			#include "UnityStandardBRDF.cginc"
 
-            #define MAX_STEPS 100
-            #define MAX_DIST 200
+            #define MAX_DIST 100
             #define SURF_DIST 0.001
 
             struct VertexData {
@@ -40,10 +40,12 @@ Shader "Unlit/Raymarch" {
             }
 
             float GetDist(float3 p) {
-                float dstA = dot(sin(p * 2.0f), 1);
-                float dstB = dot(p % 2, 1);
+                float dstA = dot(sin(p * 500.0f) * abs(sin(p * 10.5f)) * 0.01f, 1);
+                float dstB = dot(abs(cos(p * 5.0f)) * cos(p) * 0.05f, 1);
+                float dstC = dot(abs(cos(p * 100.0f) * 0.001f), 1);
+                
 
-                return lerp(dstA, dstB, 0.5f);
+                return lerp(dstC, max(dstA, dstB), 0.6f);
             }
 
             float Raymarch(float3 origin, float3 direction) {
@@ -73,7 +75,7 @@ Shader "Unlit/Raymarch" {
                 return normalize(n);
             }
 
-            fixed4 fp(v2f i) : SV_Target {
+            float4 fp(v2f i) : SV_Target {
                 float2 uv = i.uv - 0.5f;
                 float3 origin = mul(unity_CameraToWorld, float4(0, 0, 0, 1)).xyz;
                 float3 direction = mul(unity_CameraInvProjection, float4(uv, 0, 1)).xyz;
@@ -83,14 +85,26 @@ Shader "Unlit/Raymarch" {
                 float d = Raymarch(origin, direction);
 
                 fixed4 col = 0.0f;
-                
+                float4 fogOutput;
                 if (d < MAX_DIST) {
                     float3 p = origin + direction * d;
                     float3 n = GetNormal(p);
-                    col.rgb = n;
-                }
+                    n = normalize(n);
+
+                    float _FogDensity = 0.1f;
+
+                    float fogFactor = (_FogDensity / sqrt(log(2))) * max(0.0f, d);
+                    fogFactor = exp2(-fogFactor * fogFactor);
+
+                    col.rgb = 1.0f * DotClamped(_WorldSpaceLightPos0, n);
+
+                    col = 1.25f * (col - 0.5) + 0.5;
+                    col = min(1.0f, col);
+                    col = max(0.0f, col);
+                    fogOutput = lerp(float4(0, 0, 0, 0), col, saturate(fogFactor));
+                } else fogOutput = 0.0f;
                 
-                return col;
+                return fogOutput;
             }
 
             ENDCG
